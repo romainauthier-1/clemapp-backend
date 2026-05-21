@@ -161,8 +161,8 @@ router.get("/weather", async (req, res) => {
     if (data) {
       const generalInfos = {
   cityName: data.city.name,
-  sunrise: formatLocalTimeOfCity(data.city.sunrise, data.city.timezone),
-  sunset: formatLocalTimeOfCity(data.city.sunset, data.city.timezone),
+  sunrise: formatLocalTime(data.city.sunrise, data.city.timezone),
+  sunset: formatLocalTime(data.city.sunset, data.city.timezone),
 };
       const forecast = data.list.slice(0, 5).map((item) => ({
         time: `${String(new Date(item.dt * 1000).getHours()).padStart(2, "0")}:${String(new Date(item.dt * 1000).getMinutes()).padStart(2, "0")}`,
