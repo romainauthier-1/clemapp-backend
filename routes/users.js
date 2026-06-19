@@ -8,279 +8,277 @@ const bcrypt = require("bcrypt");
 
 // GET tous les users
 router.get("/all", async (req, res) => {
-  try {
-    const allUsers = await User.find();
+	try {
+		const allUsers = await User.find();
 
-    if (allUsers.length > 0) {
-      res.status(200).json({ result: true, allUsers });
-    } else {
-      res.status(404).json({ result: false, message: "Pas d'utilisateur.ice" });
-    }
-  } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
-  }
+		if (allUsers.length > 0) {
+			res.status(200).json({ result: true, allUsers });
+		} else {
+			res.status(404).json({ result: false, message: "Pas d'utilisateur.ice" });
+		}
+	} catch (err) {
+		res.status(500).json({ result: false, message: err.message });
+	}
 });
 
 // POST inscription
 router.post("/signup", async (req, res) => {
-  try {
-    if (!checkBody(req.body, ["password", "status", "name"])) {
-      res.status(400).json({ result: false, message: "Champs manquants" });
-      return;
-    }
+	try {
+		if (!checkBody(req.body, ["password", "status", "name"])) {
+			res.status(400).json({ result: false, message: "Champs manquants" });
+			return;
+		}
 
-    const { name, password, status } = req.body;
+		const { name, password, status } = req.body;
 
-    const result = await User.findOne({ name: name.toLowerCase() });
-    if (!result) {
-      const hash = bcrypt.hashSync(password, 10);
+		const result = await User.findOne({ name: name.toLowerCase() });
+		if (!result) {
+			const hash = bcrypt.hashSync(password, 10);
 
-      const newUser = new User({
-        name: name.toLowerCase(),
-        password: hash,
-        token: uid2(32),
-        status: status,
-      });
+			const newUser = new User({
+				name: name.toLowerCase(),
+				password: hash,
+				token: uid2(32),
+				status: status,
+			});
 
-      const savedUser = await newUser.save();
+			const savedUser = await newUser.save();
 
-      const { password: _, ...userWithoutPassword } = savedUser.toObject();
+			const { password: _, ...userWithoutPassword } = savedUser.toObject();
 
-      const linus = await User.findOne({ isLinus: true });
+			const linus = await User.findOne({ isLinus: true });
 
-      res.status(201).json({
-        result: true,
-        savedUser: userWithoutPassword,
-        message: "Utilisateur.ice enregistré.e !",
-        linus,
-      });
-    } else {
-      res
-        .status(400)
-        .json({ result: false, message: "Utilisateur.ice déjà existant.e !" });
-    }
-  } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
-  }
+			res.status(201).json({
+				result: true,
+				savedUser: userWithoutPassword,
+				message: "Utilisateur.ice enregistré.e !",
+				linus,
+			});
+		} else {
+			res
+				.status(400)
+				.json({ result: false, message: "Utilisateur.ice déjà existant.e !" });
+		}
+	} catch (err) {
+		res.status(500).json({ result: false, message: err.message });
+	}
 });
 
 // POST connexion
 router.post("/signin", async (req, res) => {
-  try {
-    if (!checkBody(req.body, ["name", "password"])) {
-      res.status(400).json({ result: false, message: "Champs manquants" });
-      return;
-    }
+	try {
+		if (!checkBody(req.body, ["name", "password"])) {
+			res.status(400).json({ result: false, message: "Champs manquants" });
+			return;
+		}
 
-    const { name, password } = req.body;
+		const { name, password } = req.body;
 
-    const foundUser = await User.findOne({ name: name.toLowerCase() });
+		const foundUser = await User.findOne({ name: name.toLowerCase() });
 
-    const linus = await User.findOne({ isLinus: true }).select("-password");
+		const linus = await User.findOne({ isLinus: true }).select("-password");
 
-    if (foundUser && bcrypt.compareSync(password, foundUser.password)) {
-      const { password: _, ...userWithoutPassword } = foundUser.toObject();
-      res.status(302).json({
-        result: true,
-        foundUser: userWithoutPassword,
-        linus,
-      });
-    } else {
-      res.status(401).json({
-        result: false,
-        message: "Nous n'avons pas pu vous identifier.",
-      });
-    }
-  } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
-  }
+		if (foundUser && bcrypt.compareSync(password, foundUser.password)) {
+			const { password: _, ...userWithoutPassword } = foundUser.toObject();
+			res.status(302).json({
+				result: true,
+				foundUser: userWithoutPassword,
+				linus,
+			});
+		} else {
+			res.status(401).json({
+				result: false,
+				message: "Nous n'avons pas pu vous identifier.",
+			});
+		}
+	} catch (err) {
+		res.status(500).json({ result: false, message: err.message });
+	}
 });
 
 // POST changer Linus
 router.post("/changeLinus", async (req, res) => {
-  try {
-    const { token } = req.body;
+	try {
+		const { token } = req.body;
 
-    const exLinus = await User.findOneAndUpdate(
-      { isLinus: true },
-      { isLinus: false },
-      { new: true },
-    );
+		const exLinus = await User.findOneAndUpdate(
+			{ isLinus: true },
+			{ isLinus: false },
+			{ new: true },
+		);
 
-    const newLinus = await User.findOneAndUpdate(
-      { token },
-      { isLinus: true },
-      { new: true },
-    );
+		const newLinus = await User.findOneAndUpdate(
+			{ token },
+			{ isLinus: true },
+			{ new: true },
+		);
 
-    res
-      .status(200)
-      .json({ result: true, message: "Linus mis à jour !", newLinus, exLinus });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ result: false, message: err.message });
-  }
+		res
+			.status(200)
+			.json({ result: true, message: "Linus mis à jour !", newLinus, exLinus });
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ result: false, message: err.message });
+	}
 });
 
 // GET savoir qui est Linus
 router.get("/linus", async (req, res) => {
-  try {
-    const linus = User.findOne({ isLinus: true });
+	try {
+		const linus = await User.findOne({ isLinus: true });
 
-    if (linus) {
-      res.status(200).json({ result: true, linus });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ result: false, message: err.message });
-  }
+		if (linus) {
+			res.status(200).json({ result: true, linus });
+		}
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ result: false, message: err.message });
+	}
 });
 
 // GET Météo
 router.get("/weather", async (req, res) => {
-  try {
-    const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?q=grans&appid=${process.env.EXPO_PUBLIC_OWM_API_KEY}&units=metric`,
-    );
-    const data = await response.json();
-    if (data) {
-      const generalInfos = {
-        cityName: data.city.name,
-        sunrise: `${String(new Date(data.city.sunrise * 1000).getHours()).padStart(2, "0")}:${String(new Date(data.city.sunrise * 1000).getMinutes()).padStart(2, "0")}`,
-        sunset: `${String(new Date(data.city.sunset * 1000).getHours()).padStart(2, "0")}:${String(new Date(data.city.sunset * 1000).getMinutes()).padStart(2, "0")}`,
-      };
-      const forecast = data.list.slice(0, 5).map((item) => ({
-        time: `${String(new Date(item.dt * 1000).getHours()).padStart(2, "0")}:${String(new Date(item.dt * 1000).getMinutes()).padStart(2, "0")}`,
-        temp: Math.round(item.main.temp),
-        tempMax: Math.round(item.main.temp_max),
-        tempMin: Math.round(item.main.temp_min),
-        icon: item.weather[0].icon,
-        description: item.weather[0].main,
-      }));
+	try {
+		const response = await fetch(
+			`https://api.openweathermap.org/data/2.5/forecast?q=grans&appid=${process.env.EXPO_PUBLIC_OWM_API_KEY}&units=metric`,
+		);
+		const data = await response.json();
+		if (data) {
+			const generalInfos = {
+				cityName: data.city.name,
+				sunrise: `${String(new Date(data.city.sunrise * 1000).getHours()).padStart(2, "0")}:${String(new Date(data.city.sunrise * 1000).getMinutes()).padStart(2, "0")}`,
+				sunset: `${String(new Date(data.city.sunset * 1000).getHours()).padStart(2, "0")}:${String(new Date(data.city.sunset * 1000).getMinutes()).padStart(2, "0")}`,
+			};
+			const forecast = data.list.slice(0, 5).map((item) => ({
+				time: `${String(new Date(item.dt * 1000).getHours()).padStart(2, "0")}:${String(new Date(item.dt * 1000).getMinutes()).padStart(2, "0")}`,
+				temp: Math.round(item.main.temp),
+				tempMax: Math.round(item.main.temp_max),
+				tempMin: Math.round(item.main.temp_min),
+				icon: item.weather[0].icon,
+				description: item.weather[0].main,
+			}));
 
-      res.status(200).json({ result: true, generalInfos, forecast });
-    }
-  } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
-  }
+			res.status(200).json({ result: true, generalInfos, forecast });
+		}
+	} catch (err) {
+		res.status(500).json({ result: false, message: err.message });
+	}
 });
 
 // POST Souscription notifications
 router.post("/subscribe", async (req, res) => {
-  const { token, subscription } = req.body;
-  try {
-    const updatedUser = await User.findOneAndUpdate(
-      { token },
-      { subscription },
-      { new: true },
-    );
+	const { token, subscription } = req.body;
+	try {
+		const updatedUser = await User.findOneAndUpdate(
+			{ token },
+			{ subscription },
+			{ new: true },
+		);
 
-    if (updatedUser) {
-      res.status(200).json({
-        result: true,
-        message: "Notifications activées !",
-        updatedUser,
-      });
-    } else {
-      res
-        .status(404)
-        .json({ result: false, message: "Utilisateur.ice non trouvé.e" });
-    }
-  } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
-  }
+		if (updatedUser) {
+			res.status(200).json({
+				result: true,
+				message: "Notifications activées !",
+				updatedUser,
+			});
+		} else {
+			res
+				.status(404)
+				.json({ result: false, message: "Utilisateur.ice non trouvé.e" });
+		}
+	} catch (err) {
+		res.status(500).json({ result: false, message: err.message });
+	}
 });
 
 // PUT Modifier un user
 router.put("/update/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name, oldPassword, newPassword, status } = req.body;
+	const { id } = req.params;
+	const { name, oldPassword, newPassword, status } = req.body;
 
-  try {
-    const userToUpdate = await User.findById(id);
+	try {
+		const userToUpdate = await User.findById(id);
 
-    if (!userToUpdate) {
-      return res
-        .status(404)
-        .json({ result: false, message: "Utilisateur.ice non trouvé.e" });
-    }
+		if (!userToUpdate) {
+			return res
+				.status(404)
+				.json({ result: false, message: "Utilisateur.ice non trouvé.e" });
+		}
 
-    if (oldPassword) {
-      const checkPassword = await bcrypt.compare(
-        oldPassword,
-        userToUpdate.password,
-      );
-      if (name && status && oldPassword && !newPassword) {
-        if (userToUpdate && checkPassword) {
-          userToUpdate.name = name;
-          userToUpdate.status = status;
-          const updatedUser = await userToUpdate.save();
-          const { password: _, ...updatedUserWithoutPassword } = updatedUser;
-          return res.status(200).json({
-            result: true,
-            message: "Utilisateur.ice mis.e à jour",
-            updatedUserWithoutPassword,
-          });
-        }
-      }
+		if (oldPassword) {
+			const checkPassword = await bcrypt.compare(
+				oldPassword,
+				userToUpdate.password,
+			);
+			if (name && status && oldPassword && !newPassword) {
+				if (userToUpdate && checkPassword) {
+					userToUpdate.name = name;
+					userToUpdate.status = status;
+					const updatedUser = await userToUpdate.save();
+					const { password: _, ...updatedUserWithoutPassword } = updatedUser;
+					return res.status(200).json({
+						result: true,
+						message: "Utilisateur.ice mis.e à jour",
+						updatedUserWithoutPassword,
+					});
+				}
+			}
 
-      if (name && status && oldPassword && newPassword) {
-        const hashNewPassword = await bcrypt.hash(newPassword, 10);
+			if (name && status && oldPassword && newPassword) {
+				const hashNewPassword = await bcrypt.hash(newPassword, 10);
 
-        if (userToUpdate && checkPassword) {
-          userToUpdate.name = name;
-          userToUpdate.password = hashNewPassword;
-          userToUpdate.status = status;
-          const updatedUser = await userToUpdate.save();
-          const { password: _, ...updatedUserWithoutPassword } = updatedUser;
-          return res.status(200).json({
-            result: true,
-            message: "Utilisateur.ice mis.e à jour",
-            updatedUserWithoutPassword,
-          });
-        }
-      }
-    }
+				if (userToUpdate && checkPassword) {
+					userToUpdate.name = name;
+					userToUpdate.password = hashNewPassword;
+					userToUpdate.status = status;
+					const updatedUser = await userToUpdate.save();
+					const { password: _, ...updatedUserWithoutPassword } = updatedUser;
+					return res.status(200).json({
+						result: true,
+						message: "Utilisateur.ice mis.e à jour",
+						updatedUserWithoutPassword,
+					});
+				}
+			}
+		}
 
-    if (name && status && !oldPassword && !newPassword) {
-      if (userToUpdate) {
-        userToUpdate.name = name;
-        userToUpdate.status = status;
-        const updatedUser = await userToUpdate.save();
-        const { password: _, ...updatedUserWithoutPassword } = updatedUser;
-        return res.status(200).json({
-          result: true,
-          message: "Utilisateur.ice mis.e à jour",
-          updatedUserWithoutPassword,
-        });
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    return res.status(400).json({ result: false, message: err.message });
-  }
+		if (name && status && !oldPassword && !newPassword) {
+			if (userToUpdate) {
+				userToUpdate.name = name;
+				userToUpdate.status = status;
+				const updatedUser = await userToUpdate.save();
+				const { password: _, ...updatedUserWithoutPassword } = updatedUser;
+				return res.status(200).json({
+					result: true,
+					message: "Utilisateur.ice mis.e à jour",
+					updatedUserWithoutPassword,
+				});
+			}
+		}
+	} catch (err) {
+		console.error(err);
+		return res.status(400).json({ result: false, message: err.message });
+	}
 });
 
 // DELETE Supprimer un user
 router.delete("/delete/:id", async (req, res) => {
-  const { id } = req.params;
+	const { id } = req.params;
 
-  try {
-    const deletedUser = await User.findByIdAndDelete(id);
+	try {
+		const deletedUser = await User.findByIdAndDelete(id);
 
-    if (deletedUser) {
-      return res
-        .status(200)
-        .json({
-          result: true,
-          message: "Utilisateur.ice supprimé.e !",
-          deletedUser,
-        });
-    }
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ result: false, message: err.message });
-  }
+		if (deletedUser) {
+			return res.status(200).json({
+				result: true,
+				message: "Utilisateur.ice supprimé.e !",
+				deletedUser,
+			});
+		}
+	} catch (err) {
+		console.error(err);
+		return res.status(500).json({ result: false, message: err.message });
+	}
 });
 
 module.exports = router;
