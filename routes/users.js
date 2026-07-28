@@ -138,6 +138,20 @@ router.get("/linus", async (req, res) => {
 
 // GET Météo
 router.get("/weather", async (req, res) => {
+	const formatLocalTime = (timestamp, timezoneOffsetInSeconds) => {
+		// 1. On calcule les millisecondes UTC de l'événement
+		const utcMs = timestamp * 1000;
+		// 2. On y ajoute le décalage de la ville (converti en ms)
+		const localMs = utcMs + timezoneOffsetInSeconds * 1000;
+		const localDate = new Date(localMs);
+
+		// 3. On extrait l'heure au format UTC pour ignorer le fuseau du téléphone
+		const hours = String(localDate.getUTCHours()).padStart(2, "0");
+		const minutes = String(localDate.getUTCMinutes()).padStart(2, "0");
+
+		return `${hours}:${minutes}`;
+	};
+
 	try {
 		const response = await fetch(
 			`https://api.openweathermap.org/data/2.5/forecast?q=grans&appid=${process.env.EXPO_PUBLIC_OWM_API_KEY}&units=metric`,
@@ -146,8 +160,8 @@ router.get("/weather", async (req, res) => {
 		if (data) {
 			const generalInfos = {
 				cityName: data.city.name,
-				sunrise: `${String(new Date(data.city.sunrise * 1000).getHours()).padStart(2, "0")}:${String(new Date(data.city.sunrise * 1000).getMinutes()).padStart(2, "0")}`,
-				sunset: `${String(new Date(data.city.sunset * 1000).getHours()).padStart(2, "0")}:${String(new Date(data.city.sunset * 1000).getMinutes()).padStart(2, "0")}`,
+				sunrise: formatLocalTime(data.city.sunrise, data.city.timezone),
+				sunset: formatLocalTime(data.city.sunset, data.city.timezone),
 			};
 			const forecast = data.list.slice(0, 5).map((item) => ({
 				time: `${String(new Date(item.dt * 1000).getHours()).padStart(2, "0")}:${String(new Date(item.dt * 1000).getMinutes()).padStart(2, "0")}`,
